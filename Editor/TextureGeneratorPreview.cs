@@ -26,7 +26,7 @@ namespace TextureTools.Editor
             string key = recipe.mode + "|" + (recipe.mode == TextureGenerationMode.Noise
                 ? JsonUtility.ToJson(recipe.noise) + "|" + recipe.IsVolume + "|" +
                     (recipe.IsVolume ? recipe.volumeSize.ToString() : recipe.size.ToString())
-                : JsonUtility.ToJson(recipe.ramp));
+                : JsonUtility.ToJson(recipe.gradient));
             if (generationKey != key)
             {
                 generationKey = key; volume = null; pending = started; error = null;
@@ -61,7 +61,7 @@ namespace TextureTools.Editor
                     float scale = Mathf.Min(1, 256f / Mathf.Max(size.x, size.y));
                     int w = Mathf.Max(1, Mathf.RoundToInt(size.x * scale)), h = Mathf.Max(1, Mathf.RoundToInt(size.y * scale));
                     if (recipe.mode != TextureGenerationMode.Noise)
-                        SetPixels(TextureGeneratorEngine.GenerateRampPixels(recipe, w, h), w, h, true);
+                        SetPixels(TextureGeneratorEngine.GenerateGradientPixels(recipe, w, h), w, h, true);
                     else
                     {
                         Texture2D raw = TextureGeneratorEngine.Generate(w, h, recipe.noise);

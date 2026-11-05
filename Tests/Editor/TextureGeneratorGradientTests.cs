@@ -4,9 +4,9 @@ using UnityEngine;
 
 namespace TextureTools.Editor.Tests
 {
-    public sealed class TextureGeneratorRampTests
+    public sealed class TextureGeneratorGradientTests
     {
-        private static Gradient Ramp(Color start, Color end)
+        private static Gradient CreateGradient(Color start, Color end)
         {
             var gradient = new Gradient();
             gradient.SetKeys(new[] { new GradientColorKey(start, 0), new GradientColorKey(end, 1) },
@@ -18,8 +18,8 @@ namespace TextureTools.Editor.Tests
         public void MultipleGradientsUsesTopToBottomBandsAndIncludesEndpoints()
         {
             var recipe = new TextureGeneratorRecipe { mode = TextureGenerationMode.MultipleGradients };
-            recipe.ramp.size = new Vector2Int(3, 2);
-            recipe.ramp.gradients = new[] { Ramp(Color.red, Color.white), Ramp(Color.green, Color.blue) };
+            recipe.gradient.size = new Vector2Int(3, 2);
+            recipe.gradient.gradients = new[] { CreateGradient(Color.red, Color.white), CreateGradient(Color.green, Color.blue) };
             Assert.That(TextureGeneratorEngine.GetImageSize(recipe), Is.EqualTo(new Vector2Int(3, 4)));
             Color[] pixels = TextureGeneratorAssetUtility.GeneratePixels(recipe);
             Assert.That(pixels[9], Is.EqualTo(Color.red));
@@ -33,9 +33,9 @@ namespace TextureTools.Editor.Tests
         public void HorizontalCurvesKeepNegativeAndHDRValuesThroughPresetClone()
         {
             var recipe = new TextureGeneratorRecipe { mode = TextureGenerationMode.Curves, output = TextureImageOutput.EXR };
-            recipe.ramp.size = new Vector2Int(3, 1);
-            recipe.ramp.red = AnimationCurve.Linear(0, -2, 1, 4);
-            recipe.ramp.alpha = AnimationCurve.Linear(0, 0.25f, 1, 0.75f);
+            recipe.gradient.size = new Vector2Int(3, 1);
+            recipe.gradient.red = AnimationCurve.Linear(0, -2, 1, 4);
+            recipe.gradient.alpha = AnimationCurve.Linear(0, 0.25f, 1, 0.75f);
             recipe = recipe.Clone();
             Color[] values = recipe.ApplyOutput(TextureGeneratorAssetUtility.GeneratePixels(recipe));
             Assert.That(values[0].r, Is.EqualTo(-2).Within(0.00001));
@@ -48,8 +48,8 @@ namespace TextureTools.Editor.Tests
         public void HDRGradientIsNotQuantizedToEightBits()
         {
             var recipe = new TextureGeneratorRecipe { mode = TextureGenerationMode.MultipleGradients, output = TextureImageOutput.EXR };
-            recipe.ramp.size = new Vector2Int(2, 1);
-            recipe.ramp.gradients = new[] { Ramp(new Color(4, 0.12345f, 0, 1), new Color(8, 0, 0, 1)) };
+            recipe.gradient.size = new Vector2Int(2, 1);
+            recipe.gradient.gradients = new[] { CreateGradient(new Color(4, 0.12345f, 0, 1), new Color(8, 0, 0, 1)) };
             Color[] values = TextureGeneratorAssetUtility.GeneratePixels(recipe.Clone());
             Assert.That(values[0].r, Is.EqualTo(4).Within(0.00001));
             Assert.That(values[0].g, Is.EqualTo(0.12345f).Within(0.00001));
@@ -67,7 +67,7 @@ namespace TextureTools.Editor.Tests
 
         [TestCase(TextureGenerationMode.Curves)]
         [TestCase(TextureGenerationMode.MultipleGradients)]
-        public void RampOutputIgnoresNoiseTone(TextureGenerationMode mode)
+        public void GradientOutputIgnoresNoiseTone(TextureGenerationMode mode)
         {
             var recipe = new TextureGeneratorRecipe { mode = mode, output = TextureImageOutput.EXR };
             recipe.tone.enabled = true;

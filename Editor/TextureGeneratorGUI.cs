@@ -34,7 +34,7 @@ namespace TextureTools.Editor
             bool volume = noiseMode && root.FindPropertyRelative("generate3D").boolValue;
             if (noiseMode)
                 Field(root, volume ? "volumeSize" : "size", volume ? "解像度 XYZ (4～256)" : "解像度 XY (16～4096)");
-            else Field(root.FindPropertyRelative("ramp"), "size", mode == TextureGenerationMode.MultipleGradients ? "幅 / 1段の高さ" : "解像度 XY");
+            else Field(root.FindPropertyRelative("gradient"), "size", mode == TextureGenerationMode.MultipleGradients ? "幅 / 1段の高さ" : "解像度 XY");
             SerializedProperty n = root.FindPropertyRelative("noise");
             if (noiseMode)
             {
@@ -112,29 +112,29 @@ namespace TextureTools.Editor
                 }
                 EditorGUILayout.Space();
             }
-            else DrawRamp(root.FindPropertyRelative("ramp"), mode);
+            else DrawGradients(root.FindPropertyRelative("gradient"), mode);
             if (noiseMode) DrawTone(root.FindPropertyRelative("tone"), histogram, hdr);
         }
-        private static void DrawRamp(SerializedProperty ramp, TextureGenerationMode mode)
+        private static void DrawGradients(SerializedProperty gradient, TextureGenerationMode mode)
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                if (!AreaFoldout("Ramp", mode == TextureGenerationMode.MultipleGradients ? "Multiple Gradients" : "Curves")) return;
+                if (!AreaFoldout("Gradient", mode == TextureGenerationMode.MultipleGradients ? "Multiple Gradients" : "Curves")) return;
                 if (mode == TextureGenerationMode.MultipleGradients)
                 {
-                    SerializedProperty gradients = ramp.FindPropertyRelative("gradients");
-                    Field(ramp, "gradients", "HDR Gradients（上から順）");
-                    Vector2Int size = ramp.FindPropertyRelative("size").vector2IntValue;
+                    SerializedProperty gradients = gradient.FindPropertyRelative("gradients");
+                    Field(gradient, "gradients", "HDR Gradients（上から順）");
+                    Vector2Int size = gradient.FindPropertyRelative("size").vector2IntValue;
                     EditorGUILayout.LabelField("出力サイズ", $"{Mathf.Max(1, size.x)} × {(long)Mathf.Max(1, size.y) * gradients.arraySize}");
                     if (gradients.arraySize == 0)
                         EditorGUILayout.HelpBox("Gradientを1つ以上追加してください。", MessageType.Info);
                 }
                 else
                 {
-                    Curve(ramp, "red", "R", Color.red, 40, true);
-                    Curve(ramp, "green", "G", Color.green, 40, true);
-                    Curve(ramp, "blue", "B", Color.cyan, 40, true);
-                    Curve(ramp, "alpha", "A", Color.white, 40, true);
+                    Curve(gradient, "red", "R", Color.red, 40, true);
+                    Curve(gradient, "green", "G", Color.green, 40, true);
+                    Curve(gradient, "blue", "B", Color.cyan, 40, true);
+                    Curve(gradient, "alpha", "A", Color.white, 40, true);
                 }
             }
             EditorGUILayout.Space();

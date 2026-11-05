@@ -8,7 +8,7 @@ namespace TextureTools.Editor
     public enum TextureImageOutput { PNG, EXR }
 
     [Serializable]
-    public sealed class TextureGeneratorRamp
+    public sealed class TextureGeneratorGradientSettings
     {
         public Vector2Int size = new Vector2Int(256, 1);
         [GradientUsage(true)] public Gradient[] gradients = { new Gradient() };
@@ -83,14 +83,14 @@ namespace TextureTools.Editor
         public Vector2Int size = new Vector2Int(512, 512);
         public Vector3Int volumeSize = new Vector3Int(64, 64, 64);
         public TextureGenerationSettings noise = new TextureGenerationSettings();
-        public TextureGeneratorRamp ramp = new TextureGeneratorRamp();
+        public TextureGeneratorGradientSettings gradient = new TextureGeneratorGradientSettings();
         public TextureGeneratorTone tone = new TextureGeneratorTone();
         public bool IsVolume => mode == TextureGenerationMode.Noise && generate3D;
         public bool IsHDR => output == TextureImageOutput.EXR;
         public Color[] ApplyOutput(Color[] pixels)
         {
             if (mode == TextureGenerationMode.Noise) return tone.Apply(pixels, IsHDR);
-            // Ramp modes output their authored values directly. PNG alone needs LDR clamping.
+            // Gradient modes output their authored values directly. PNG alone needs LDR clamping.
             if (!IsHDR)
                 for (int i = 0; i < pixels.Length; i++)
                 {
@@ -106,8 +106,8 @@ namespace TextureTools.Editor
             volumeSize.x = Mathf.Clamp(volumeSize.x, 4, 256); volumeSize.y = Mathf.Clamp(volumeSize.y, 4, 256);
             volumeSize.z = Mathf.Clamp(volumeSize.z, 4, 256);
             if (noise == null) noise = new TextureGenerationSettings();
-            if (ramp == null) ramp = new TextureGeneratorRamp();
-            ramp.size.x = Mathf.Clamp(ramp.size.x, 1, 4096); ramp.size.y = Mathf.Clamp(ramp.size.y, 1, 4096);
+            if (gradient == null) gradient = new TextureGeneratorGradientSettings();
+            gradient.size.x = Mathf.Clamp(gradient.size.x, 1, 4096); gradient.size.y = Mathf.Clamp(gradient.size.y, 1, 4096);
             if (tone == null) tone = new TextureGeneratorTone();
             tone.contrastR = Mathf.Clamp(tone.contrastR, 0, 4); tone.contrastG = Mathf.Clamp(tone.contrastG, 0, 4);
             tone.contrastB = Mathf.Clamp(tone.contrastB, 0, 4); tone.contrastA = Mathf.Clamp(tone.contrastA, 0, 4);
