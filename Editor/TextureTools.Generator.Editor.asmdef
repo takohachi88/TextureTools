@@ -1,0 +1,7 @@
+{
+  "name": "TextureTools.Generator.Editor",
+  "rootNamespace": "TextureTools.Editor",
+  "references": [],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}

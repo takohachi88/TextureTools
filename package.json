@@ -1,0 +1,23 @@
+{
+  "name": "com.texturetools.generator",
+  "displayName": "Texture Generator",
+  "version": "0.1.0",
+  "unity": "6000.0",
+  "description": "Editor tools for procedural 2D/3D textures, mosaic UV maps and seamless texture processing.",
+  "keywords": [
+    "texture",
+    "noise",
+    "procedural",
+    "seamless",
+    "editor"
+  ],
+  "dependencies": {
+    "com.unity.modules.imageconversion": "1.0.0",
+    "com.unity.modules.imgui": "1.0.0",
+    "com.unity.modules.jsonserialize": "1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/takohachi88/TextureTools.git"
+  }
+}

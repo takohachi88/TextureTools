@@ -1,0 +1,8 @@
+{
+  "name": "TextureTools.Generator.Editor.Tests",
+  "rootNamespace": "TextureTools.Editor.Tests",
+  "references": ["TextureTools.Generator.Editor"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}
