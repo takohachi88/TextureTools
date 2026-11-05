@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace TextureTools.Editor
 {
-    public enum TextureGenerationMode { Noise, MultipleGradients, Curves }
+    public enum TextureGenerationMode { Noise, MultipleGradients, Curves, ChannelPacking }
     public enum TextureImageOutput { PNG, EXR }
 
     [Serializable]
@@ -85,6 +85,7 @@ namespace TextureTools.Editor
         public TextureGenerationSettings noise = new TextureGenerationSettings();
         public TextureGeneratorGradientSettings gradient = new TextureGeneratorGradientSettings();
         public TextureGeneratorTone tone = new TextureGeneratorTone();
+        public TextureGeneratorChannelPacking packing = new TextureGeneratorChannelPacking();
         public bool IsVolume => mode == TextureGenerationMode.Noise && generate3D;
         public bool IsHDR => output == TextureImageOutput.EXR;
         public Color[] ApplyOutput(Color[] pixels)
@@ -106,6 +107,7 @@ namespace TextureTools.Editor
             volumeSize.x = Mathf.Clamp(volumeSize.x, 4, 256); volumeSize.y = Mathf.Clamp(volumeSize.y, 4, 256);
             volumeSize.z = Mathf.Clamp(volumeSize.z, 4, 256);
             if (noise == null) noise = new TextureGenerationSettings();
+            if (packing == null) packing = new TextureGeneratorChannelPacking();
             if (gradient == null) gradient = new TextureGeneratorGradientSettings();
             gradient.size.x = Mathf.Clamp(gradient.size.x, 1, 4096); gradient.size.y = Mathf.Clamp(gradient.size.y, 1, 4096);
             if (tone == null) tone = new TextureGeneratorTone();

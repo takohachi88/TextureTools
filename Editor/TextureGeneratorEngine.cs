@@ -18,7 +18,21 @@ namespace TextureTools.Editor
         public bool rectangleEqualize = true;
         public float rectangleStrength = 0.5f, rectangleBackground = 0.5f;
         public bool seamless = true;
-        public bool separateSeeds;
+        public bool separateSeeds, separateCells;
+        public Vector3Int redCells = new Vector3Int(8, 8, 8), greenCells = new Vector3Int(8, 8, 8),
+            blueCells = new Vector3Int(8, 8, 8), alphaCells = new Vector3Int(8, 8, 8);
+        public TextureGenerationSettings WithChannel(int channel)
+        {
+            if (!separateSeeds && !separateCells) return this;
+            var copy = (TextureGenerationSettings)MemberwiseClone();
+            if (separateSeeds) copy.seed = new[] { redSeed, greenSeed, blueSeed, alphaSeed }[channel];
+            if (separateCells)
+            {
+                Vector3Int cells = new[] { redCells, greenCells, blueCells, alphaCells }[channel];
+                copy.columns = cells.x; copy.rows = cells.y; copy.layers = cells.z;
+            }
+            return copy;
+        }
         public int redSeed = 1, greenSeed = 1, blueSeed = 1, alphaSeed = 1;
         public TextureGenerationSettings WithSeed(int value)
         {
@@ -32,6 +46,8 @@ namespace TextureTools.Editor
 
     public static partial class TextureGeneratorEngine
     {
+        private static bool SameSampling(TextureGenerationSettings a, TextureGenerationSettings b)
+            => a.seed == b.seed && a.columns == b.columns && a.rows == b.rows && a.layers == b.layers;
         private static int Wrap(int n, int period) => (n % period + period) % period;
         private static float Hash(int x, int y, int seed)
         {
@@ -187,10 +203,9 @@ namespace TextureTools.Editor
                 return Create(width, height, GenerateRectanglePixels(width, height, 1, settings, false, cancel), true, settings.seamless);
             var pixels = new Color32[width * height];
             var channels = new[] { settings.red, settings.green, settings.blue, settings.alpha };
-            var seeds = new[] { settings.redSeed, settings.greenSeed, settings.blueSeed, settings.alphaSeed };
             var channelSettings = new TextureGenerationSettings[4];
             for (int c = 0; c < 4; c++)
-                channelSettings[c] = settings.separateSeeds ? settings.WithSeed(seeds[c]) : settings;
+                channelSettings[c] = settings.WithChannel(c);
             for (int y = 0; y < height; y++)
             {
                 if (y % 16 == 0 && cancel != null && cancel((float)y / height))
@@ -204,7 +219,7 @@ namespace TextureTools.Editor
                     {
                         Vector4 current = sample;
                         Vector2 currentCenter = center;
-                        if (c > 0 && channelSettings[c].seed != channelSettings[0].seed &&
+                        if (c > 0 && !SameSampling(channelSettings[c], channelSettings[0]) &&
                             channels[c] != GeneratedChannel.Zero && channels[c] != GeneratedChannel.One)
                             current = Sample(u, v, channelSettings[c], out currentCenter);
                         color[c] = OutputChannel(current, currentCenter, channels[c]);

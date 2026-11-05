@@ -157,9 +157,8 @@ namespace TextureTools.Editor
             {
                 if (source == null) throw new ArgumentNullException(nameof(source));
                 channels = new[] { source.red, source.green, source.blue, source.alpha };
-                int[] seeds = { source.redSeed, source.greenSeed, source.blueSeed, source.alphaSeed };
                 for (int c = 0; c < 4; c++)
-                    settings[c] = source.separateSeeds ? source.WithSeed(seeds[c]) : source;
+                    settings[c] = source.WithChannel(c);
             }
             public Color32 Sample(float u, float v, float w)
             {
@@ -169,7 +168,7 @@ namespace TextureTools.Editor
                 {
                     if (channels[c] == GeneratedChannel.Zero) { result[c] = 0; continue; }
                     if (channels[c] == GeneratedChannel.One) { result[c] = 1; continue; }
-                    VolumeSample sample = c == 0 || settings[c].seed == settings[0].seed
+                    VolumeSample sample = c == 0 || SameSampling(settings[c], settings[0])
                         ? first : SampleVolume(u, v, w, settings[c]);
                     result[c] = VolumeChannel(sample, channels[c]);
                 }

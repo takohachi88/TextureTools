@@ -26,7 +26,9 @@ namespace TextureTools.Editor
             string key = recipe.mode + "|" + (recipe.mode == TextureGenerationMode.Noise
                 ? JsonUtility.ToJson(recipe.noise) + "|" + recipe.IsVolume + "|" +
                     (recipe.IsVolume ? recipe.volumeSize.ToString() : recipe.size.ToString())
-                : JsonUtility.ToJson(recipe.gradient));
+                : recipe.mode == TextureGenerationMode.ChannelPacking
+                    ? JsonUtility.ToJson(recipe.packing) + "|" + recipe.size
+                    : JsonUtility.ToJson(recipe.gradient));
             if (generationKey != key)
             {
                 generationKey = key; volume = null; pending = started; error = null;
@@ -60,7 +62,9 @@ namespace TextureTools.Editor
                     Vector2Int size = TextureGeneratorEngine.GetImageSize(recipe);
                     float scale = Mathf.Min(1, 256f / Mathf.Max(size.x, size.y));
                     int w = Mathf.Max(1, Mathf.RoundToInt(size.x * scale)), h = Mathf.Max(1, Mathf.RoundToInt(size.y * scale));
-                    if (recipe.mode != TextureGenerationMode.Noise)
+                    if (recipe.mode == TextureGenerationMode.ChannelPacking)
+                        SetPixels(TextureGeneratorEngine.GeneratePackedPixels(recipe.packing, w, h), w, h, true);
+                    else if (recipe.mode != TextureGenerationMode.Noise)
                         SetPixels(TextureGeneratorEngine.GenerateGradientPixels(recipe, w, h), w, h, true);
                     else
                     {

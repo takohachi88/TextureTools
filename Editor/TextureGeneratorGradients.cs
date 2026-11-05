@@ -9,7 +9,7 @@ namespace TextureTools.Editor
         public static Vector2Int GetImageSize(TextureGeneratorRecipe recipe)
         {
             recipe.Normalize();
-            if (recipe.mode == TextureGenerationMode.Noise)
+            if (recipe.mode == TextureGenerationMode.Noise || recipe.mode == TextureGenerationMode.ChannelPacking)
                 return recipe.IsVolume ? new Vector2Int(recipe.volumeSize.x, recipe.volumeSize.y) : recipe.size;
             int count = recipe.mode == TextureGenerationMode.MultipleGradients ? recipe.gradient.gradients?.Length ?? 0 : 1;
             if (count < 1) throw new InvalidOperationException("Gradientを1つ以上追加してください。");
@@ -20,7 +20,7 @@ namespace TextureTools.Editor
 
         public static Color[] GenerateGradientPixels(TextureGeneratorRecipe recipe, int width = 0, int height = 0)
         {
-            if (recipe.mode == TextureGenerationMode.Noise) throw new ArgumentException("Gradient mode is required.");
+            if (recipe.mode == TextureGenerationMode.Noise || recipe.mode == TextureGenerationMode.ChannelPacking) throw new ArgumentException("Gradient mode is required.");
             Vector2Int fullSize = GetImageSize(recipe);
             if (width == 0) width = fullSize.x;
             if (height == 0) height = fullSize.y;

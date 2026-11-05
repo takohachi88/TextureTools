@@ -24,7 +24,7 @@ namespace TextureTools.Editor
             SerializedProperty p = parent.FindPropertyRelative(field);
             p.intValue = EditorGUILayout.IntSlider(label, p.intValue, min, max);
         }
-        public static void DrawRecipe(SerializedProperty root, Action histogram)
+        public static void DrawRecipe(SerializedProperty root, Action histogram, TextureGeneratorPackingGUI packingGUI)
         {
             Field(root, "mode", "生成モード");
             TextureGenerationMode mode = (TextureGenerationMode)root.FindPropertyRelative("mode").intValue;
@@ -32,7 +32,7 @@ namespace TextureTools.Editor
             bool hdr = root.FindPropertyRelative("output").intValue == (int)TextureImageOutput.EXR;
             if (noiseMode) Field(root, "generate3D", "3Dテクスチャ");
             bool volume = noiseMode && root.FindPropertyRelative("generate3D").boolValue;
-            if (noiseMode)
+            if (noiseMode || mode == TextureGenerationMode.ChannelPacking)
                 Field(root, volume ? "volumeSize" : "size", volume ? "解像度 XYZ (4～256)" : "解像度 XY (16～4096)");
             else Field(root.FindPropertyRelative("gradient"), "size", mode == TextureGenerationMode.MultipleGradients ? "幅 / 1段の高さ" : "解像度 XY");
             SerializedProperty n = root.FindPropertyRelative("noise");
@@ -46,7 +46,24 @@ namespace TextureTools.Editor
                         GeneratedPattern pattern = (GeneratedPattern)n.FindPropertyRelative("pattern").intValue;
                         bool rectangles = pattern == GeneratedPattern.RectangleLayers;
                         bool prism = pattern == GeneratedPattern.Hexagon || pattern == GeneratedPattern.Triangle;
-                        if (!rectangles) CellCounts(n, volume && !prism);
+                        if (!rectangles)
+                        {
+                            bool separateCells = n.FindPropertyRelative("separateCells").boolValue;
+                            Field(n, "separateCells", "RGBA別セル数");
+                            if (n.FindPropertyRelative("separateCells").boolValue)
+                            {
+                                string[] cellFields = { "redCells", "greenCells", "blueCells", "alphaCells" };
+                                for (int c = 0; c < cellFields.Length; c++)
+                                {
+                                    SerializedProperty cells = n.FindPropertyRelative(cellFields[c]);
+                                    if (!separateCells) cells.vector3IntValue = new Vector3Int(
+                                        n.FindPropertyRelative("columns").intValue, n.FindPropertyRelative("rows").intValue,
+                                        n.FindPropertyRelative("layers").intValue);
+                                    CellVector(cells, RgbaLabels[c], volume && !prism);
+                                }
+                            }
+                            else CellCounts(n, volume && !prism);
+                        }
                         Field(n, "seamless", "シームレス生成");
                         bool separate = n.FindPropertyRelative("separateSeeds").boolValue;
                         Field(n, "separateSeeds", "RGBA別シード");
@@ -102,6 +119,14 @@ namespace TextureTools.Editor
                                     Assign(n, GeneratedChannel.CenterU, GeneratedChannel.CenterV, volume ? GeneratedChannel.CenterW : GeneratedChannel.Zero);
                                     n.FindPropertyRelative("greenSeed").intValue = n.FindPropertyRelative("redSeed").intValue;
                                     n.FindPropertyRelative("blueSeed").intValue = n.FindPropertyRelative("redSeed").intValue;
+                                    if (n.FindPropertyRelative("separateCells").boolValue)
+                                    {
+                                        Vector3Int cells = n.FindPropertyRelative("redCells").vector3IntValue;
+                                        n.FindPropertyRelative("columns").intValue = cells.x;
+                                        n.FindPropertyRelative("rows").intValue = cells.y;
+                                        n.FindPropertyRelative("layers").intValue = cells.z;
+                                        n.FindPropertyRelative("separateCells").boolValue = false;
+                                    }
                                     SerializedProperty tone = root.FindPropertyRelative("tone");
                                     tone.FindPropertyRelative("enabled").boolValue = false; ResetContrast(tone);
                                 }
@@ -111,6 +136,11 @@ namespace TextureTools.Editor
                     }
                 }
                 EditorGUILayout.Space();
+            }
+            else if (mode == TextureGenerationMode.ChannelPacking)
+            {
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                    if (AreaFoldout("Packing", "チャンネル統合")) packingGUI.Draw();
             }
             else DrawGradients(root.FindPropertyRelative("gradient"), mode);
             if (noiseMode) DrawTone(root.FindPropertyRelative("tone"), histogram, hdr);
@@ -123,7 +153,12 @@ namespace TextureTools.Editor
                 if (mode == TextureGenerationMode.MultipleGradients)
                 {
                     SerializedProperty gradients = gradient.FindPropertyRelative("gradients");
-                    Field(gradient, "gradients", "HDR Gradients（上から順）");
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        GUILayout.Space(12);
+                        using (new EditorGUILayout.VerticalScope())
+                            Field(gradient, "gradients", "HDR Gradients（上から順）");
+                    }
                     Vector2Int size = gradient.FindPropertyRelative("size").vector2IntValue;
                     EditorGUILayout.LabelField("出力サイズ", $"{Mathf.Max(1, size.x)} × {(long)Mathf.Max(1, size.y) * gradients.arraySize}");
                     if (gradients.arraySize == 0)
@@ -210,6 +245,32 @@ namespace TextureTools.Editor
 
         private static readonly GUIContent[] XyLabels = { new GUIContent("X"), new GUIContent("Y") };
         private static readonly GUIContent[] XyzLabels = { new GUIContent("X"), new GUIContent("Y"), new GUIContent("Z") };
+
+        private static void CellVector(SerializedProperty property, GUIContent label, bool depth)
+        {
+            Vector3Int cells = property.vector3IntValue;
+            int[] values = depth ? new[] { cells.x, cells.y, cells.z } : new[] { cells.x, cells.y };
+            Rect rect = EditorGUILayout.GetControlRect();
+            float oldWidth = EditorGUIUtility.labelWidth;
+            int oldIndent = EditorGUI.indentLevel;
+            EditorGUI.BeginProperty(rect, label, property);
+            try
+            {
+                EditorGUIUtility.labelWidth = 88;
+                rect = EditorGUI.PrefixLabel(rect, label);
+                EditorGUI.indentLevel = 0;
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.MultiIntField(rect, depth ? XyzLabels : XyLabels, values);
+                if (EditorGUI.EndChangeCheck())
+                    property.vector3IntValue = new Vector3Int(Mathf.Clamp(values[0], 1, 128),
+                        Mathf.Clamp(values[1], 2, 128), depth ? Mathf.Clamp(values[2], 1, 128) : cells.z);
+            }
+            finally
+            {
+                EditorGUIUtility.labelWidth = oldWidth; EditorGUI.indentLevel = oldIndent;
+                EditorGUI.EndProperty();
+            }
+        }
 
         private static void CellCounts(SerializedProperty noise, bool depth)
         {

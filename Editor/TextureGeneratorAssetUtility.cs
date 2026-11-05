@@ -42,6 +42,8 @@ namespace TextureTools.Editor
         public static Color[] GeneratePixels(TextureGeneratorRecipe recipe)
         {
             recipe.Normalize();
+            if (recipe.mode == TextureGenerationMode.ChannelPacking)
+                return TextureGeneratorEngine.GeneratePackedPixels(recipe.packing, recipe.size.x, recipe.size.y);
             if (recipe.mode != TextureGenerationMode.Noise) return TextureGeneratorEngine.GenerateGradientPixels(recipe);
             if (recipe.IsVolume) return Array.ConvertAll(TextureGeneratorEngine.Generate3DPixels(
                 recipe.volumeSize.x, recipe.volumeSize.y, recipe.volumeSize.z, recipe.noise), p => (Color)p);

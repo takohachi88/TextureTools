@@ -11,11 +11,19 @@ namespace TextureTools.Editor
         private readonly SerializedObject properties;
         private readonly TextureGeneratorPreview preview = new TextureGeneratorPreview();
         private readonly Action repaint;
+        private readonly TextureGeneratorPackingGUI packingGUI;
         public TextureGeneratorInspectorPanel(TextureGeneratorPreset data, Action repaint)
         {
             this.data = data; this.repaint = repaint;
             properties = new SerializedObject(data); preview.SetRecipe(data.recipe);
+            packingGUI = new TextureGeneratorPackingGUI(properties.FindProperty("recipe.packing.channels"));
             EditorApplication.update += Tick;
+            EditorApplication.projectChanged += SourcesChanged;
+        }
+        private void SourcesChanged()
+        {
+            if (data == null || data.recipe.mode != TextureGenerationMode.ChannelPacking || !preview.HasStarted) return;
+            preview.SetRecipe(data.recipe); preview.Request(); repaint();
         }
         private void Tick() { if (preview.Tick()) repaint(); }
         private static void Run(Action action)
@@ -28,7 +36,7 @@ namespace TextureTools.Editor
         {
             if (data == null) return;
             properties.Update();
-            TextureGeneratorGUI.DrawRecipe(properties.FindProperty("recipe"), preview.DrawHistogram);
+            TextureGeneratorGUI.DrawRecipe(properties.FindProperty("recipe"), preview.DrawHistogram, packingGUI);
             properties.ApplyModifiedProperties();
             preview.SetRecipe(data.recipe);
             EditorGUILayout.Space();
@@ -51,7 +59,7 @@ namespace TextureTools.Editor
                     Run(() => TextureGeneratorAssetUtility.ExportImage(data.recipe));
             }
         }
-        public void Dispose() { EditorApplication.update -= Tick; preview.Dispose(); }
+        public void Dispose() { EditorApplication.update -= Tick; EditorApplication.projectChanged -= SourcesChanged; preview.Dispose(); }
     }
 
     [CustomEditor(typeof(TextureGeneratorPreset))]
